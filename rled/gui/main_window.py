@@ -93,7 +93,12 @@ class MainWindow(QMainWindow):
         
         env_layout.addWidget(QLabel("Environment:"), 0, 0)
         self.env_combo = QComboBox()
-        self.env_combo.addItems(["CartPole-v1", "MountainCar-v0", "Acrobot-v1"])
+        self.env_combo.addItems([
+            "CartPole-v1", 
+            "MountainCar-v0", 
+            "Acrobot-v1",
+            "GridWorldTreasure-v0"
+        ])
         env_layout.addWidget(self.env_combo, 0, 1)
         
         env_layout.addWidget(QLabel("Discretization Bins:"), 1, 0)

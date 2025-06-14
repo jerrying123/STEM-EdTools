@@ -341,6 +341,8 @@ class PolicyAnimationWidget(QWidget):
             self.visualize_mountaincar(frame_data)
         elif self.env_name == "Acrobot-v1":
             self.visualize_acrobot(frame_data)
+        elif self.env_name == "GridWorldTreasure-v0":
+            self.visualize_gridworld_treasure(frame_data)
         else:
             self.visualize_generic(frame_data)
         
@@ -555,6 +557,104 @@ class PolicyAnimationWidget(QWidget):
                    verticalalignment='top', horizontalalignment='right',
                    bbox=dict(boxstyle='round', facecolor='lightblue', alpha=0.8))
     
+    def visualize_gridworld_treasure(self, frame_data):
+        """Visualize GridWorld Treasure Hunt environment"""
+        ax = self.figure.add_subplot(111)
+        
+        # Extract state information
+        state = frame_data['state']
+        
+        # For GridWorldTreasure, we need to reconstruct the grid from the observation
+        # The observation contains: [agent_x, agent_y, energy, steps_remaining, treasure_grid_flat, obstacle_grid_flat]
+        agent_x, agent_y = int(state[0]), int(state[1])
+        energy = int(state[2])
+        steps_remaining = int(state[3])
+        
+        # Determine grid size (we need to infer this from the observation length)
+        remaining_obs = len(state) - 4
+        grid_size = int(np.sqrt(remaining_obs / 2))  # Divide by 2 for treasure and obstacle grids
+        
+        # Extract treasure and obstacle grids
+        treasure_grid_flat = state[4:4 + grid_size**2]
+        obstacle_grid_flat = state[4 + grid_size**2:]
+        
+        treasure_grid = treasure_grid_flat.reshape(grid_size, grid_size)
+        obstacle_grid = obstacle_grid_flat.reshape(grid_size, grid_size)
+        
+        # Create display grid
+        display_grid = np.zeros((grid_size, grid_size))
+        
+        # Add obstacles (1)
+        display_grid[obstacle_grid.astype(bool)] = 1
+        
+        # Add treasures (2)
+        display_grid[treasure_grid.astype(bool)] = 2
+        
+        # Add agent (3)
+        display_grid[agent_x, agent_y] = 3
+        
+        # Create color map
+        colors = ['white', 'brown', 'gold', 'blue']
+        cmap = ListedColormap(colors)
+        
+        # Display grid
+        im = ax.imshow(display_grid, cmap=cmap, vmin=0, vmax=3)
+        
+        # Add grid lines
+        for i in range(grid_size + 1):
+            ax.axhline(i - 0.5, color='black', linewidth=1)
+            ax.axvline(i - 0.5, color='black', linewidth=1)
+        
+        # Set title and labels
+        ax.set_title(f"GridWorld Treasure Hunt - Episode {frame_data['episode']}, Step {frame_data['step']}")
+        ax.set_xticks(range(grid_size))
+        ax.set_yticks(range(grid_size))
+        ax.set_aspect('equal')
+        
+        # Add state information
+        if self.show_state_info_cb.isChecked():
+            info_text = f"Position: ({agent_x}, {agent_y})\n"
+            info_text += f"Energy: {energy}\n"
+            info_text += f"Steps Remaining: {steps_remaining}\n"
+            actions = ["Up", "Right", "Down", "Left", "Stay"]
+            info_text += f"Action: {actions[frame_data['action']]}\n"
+            info_text += f"Reward: {frame_data['reward']:.1f}"
+            
+            ax.text(0.02, 0.98, info_text, transform=ax.transAxes, 
+                   verticalalignment='top', bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
+        
+        # Add Q-values or action probabilities
+        if self.show_qvalues_cb.isChecked() and frame_data['q_values']:
+            # Determine if these are Q-values or action probabilities
+            values = frame_data['q_values']
+            max_val = max(values.values()) if values else 0
+            
+            if max_val <= 1.0 and min(values.values()) >= 0:
+                # Likely action probabilities (REINFORCE)
+                q_text = "Action Probabilities:\n"
+                for action, prob in values.items():
+                    action_name = ["Up", "Right", "Down", "Left", "Stay"][action]
+                    q_text += f"{action_name}: {prob:.3f}\n"
+            else:
+                # Q-values (DQN-based methods)
+                q_text = "Q-Values:\n"
+                for action, q_val in values.items():
+                    action_name = ["Up", "Right", "Down", "Left", "Stay"][action]
+                    q_text += f"{action_name}: {q_val:.3f}\n"
+            
+            ax.text(0.98, 0.98, q_text, transform=ax.transAxes, 
+                   verticalalignment='top', horizontalalignment='right',
+                   bbox=dict(boxstyle='round', facecolor='lightblue', alpha=0.8))
+        
+        # Add legend
+        legend_elements = [
+            plt.Rectangle((0, 0), 1, 1, facecolor='white', edgecolor='black', label='Empty'),
+            plt.Rectangle((0, 0), 1, 1, facecolor='brown', label='Obstacle'),
+            plt.Rectangle((0, 0), 1, 1, facecolor='gold', label='Treasure'),
+            plt.Rectangle((0, 0), 1, 1, facecolor='blue', label='Agent')
+        ]
+        ax.legend(handles=legend_elements, loc='upper right', bbox_to_anchor=(1.15, 1))
+    
     def visualize_generic(self, frame_data):
         """Generic visualization for unknown environments"""
         ax = self.figure.add_subplot(111)
@@ -706,6 +806,18 @@ class PolicyAnimationWidget(QWidget):
                 (-1.0, 1.0),    # sin(theta2)
                 (-4.0, 4.0),    # theta1_dot
                 (-9.0, 9.0)     # theta2_dot
+            ]
+        elif env.spec.id == 'GridWorldTreasure-v0':
+            # GridWorldTreasure - only discretize key features for tabular methods
+            grid_size = getattr(env, 'grid_size', 8)
+            max_energy = getattr(env, 'max_energy', 100)
+            max_steps = getattr(env, 'max_steps', 200)
+            
+            state_bounds = [
+                (0, grid_size - 1),     # agent_x
+                (0, grid_size - 1),     # agent_y  
+                (0, max_energy),        # energy
+                (0, max_steps)          # steps_remaining
             ]
         else:
             # For other environments, use the original logic but clip infinite values

@@ -124,6 +124,21 @@ class TrainingWorker(QThread):
                 (-4.0, 4.0),    # theta1_dot
                 (-9.0, 9.0)     # theta2_dot
             ]
+        elif env.spec.id == 'GridWorldTreasure-v0':
+            # GridWorldTreasure has a large observation space (position + energy + steps + grids)
+            # For tabular methods, we'll only discretize the key features
+            grid_size = getattr(env, 'grid_size', 8)
+            max_energy = getattr(env, 'max_energy', 100)
+            max_steps = getattr(env, 'max_steps', 200)
+            
+            state_bounds = [
+                (0, grid_size - 1),     # agent_x
+                (0, grid_size - 1),     # agent_y  
+                (0, max_energy),        # energy
+                (0, max_steps)          # steps_remaining
+            ]
+            # Note: For simplicity, we ignore the treasure and obstacle grids in tabular methods
+            # Deep RL methods will use the full observation space
         else:
             # For other environments, use the original logic but clip infinite values
             low = env.observation_space.low
@@ -140,7 +155,15 @@ class TrainingWorker(QThread):
     
     def discretize_state(self, observation, bins):
         """Discretize continuous state space into bins"""
-        return tuple(np.digitize(observation[i], bins[i]) for i in range(len(observation)))
+        # For GridWorldTreasure, only discretize the first 4 elements (position, energy, steps)
+        if len(observation) > len(bins):
+            # This is likely GridWorldTreasure with a large observation space
+            # Only discretize the key features we defined in create_state_bins
+            key_features = observation[:len(bins)]
+            return tuple(np.digitize(key_features[i], bins[i]) for i in range(len(bins)))
+        else:
+            # Standard discretization for other environments
+            return tuple(np.digitize(observation[i], bins[i]) for i in range(len(observation)))
     
     def initialize_algorithms(self):
         """Initialize the selected algorithms"""
