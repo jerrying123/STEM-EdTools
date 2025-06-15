@@ -25,6 +25,14 @@ class MainWindow(QMainWindow):
         # Initialize variables
         self.training_worker = None
         self.training_results = {}
+        self.current_rewards_data = {}
+        
+        # Setup GUI update timer for smooth real-time updates
+        from PyQt6.QtCore import QTimer
+        self.gui_update_timer = QTimer()
+        self.gui_update_timer.timeout.connect(self.process_pending_updates)
+        self.gui_update_timer.setInterval(50)  # Update GUI every 50ms
+        self.pending_plot_update = False
         
         self.setup_ui()
         
@@ -338,10 +346,12 @@ class MainWindow(QMainWindow):
         
         # Create and start training worker
         self.training_worker = TrainingWorker(params)
-        self.training_worker.progress_updated.connect(self.update_progress)
-        self.training_worker.episode_completed.connect(self.update_training_plot)
-        self.training_worker.training_completed.connect(self.training_finished)
-        self.training_worker.log_message.connect(self.add_log_message)
+        # Use queued connections for better performance - Qt will automatically compress redundant signals
+        from PyQt6.QtCore import Qt
+        self.training_worker.progress_updated.connect(self.update_progress, Qt.ConnectionType.QueuedConnection)
+        self.training_worker.episode_completed.connect(self.update_training_plot, Qt.ConnectionType.QueuedConnection)
+        self.training_worker.training_completed.connect(self.training_finished, Qt.ConnectionType.QueuedConnection)
+        self.training_worker.log_message.connect(self.add_log_message, Qt.ConnectionType.QueuedConnection)
         
         self.training_worker.start()
         
@@ -416,12 +426,34 @@ class MainWindow(QMainWindow):
     def update_progress(self, progress):
         """Update the progress bar"""
         self.progress_bar.setValue(progress)
+        # Force immediate GUI update
+        from PyQt6.QtCore import QCoreApplication
+        QCoreApplication.processEvents()
+        if progress in [1, 10, 25, 50, 75, 90, 100]:  # Log at key milestones
+            import time
+            self.add_log_message(f"Progress updated to {progress}%")
     
     def update_training_plot(self, episode, rewards):
         """Update the training progress plot"""
         # Store current data for refreshing
         self.current_rewards_data = rewards
-        self.plot_training_data()
+        
+        # Mark that we have a pending plot update (timer will handle actual plotting)
+        self.pending_plot_update = True
+        
+        # Start the GUI update timer if not already running
+        if not self.gui_update_timer.isActive():
+            self.gui_update_timer.start()
+    
+    def process_pending_updates(self):
+        """Process pending GUI updates (called by timer)"""
+        if self.pending_plot_update and self.current_rewards_data:
+            self.plot_training_data()
+            self.pending_plot_update = False
+        
+        # Stop timer if no more updates pending
+        if not self.pending_plot_update:
+            self.gui_update_timer.stop()
     
     def refresh_training_plot(self):
         """Refresh the training plot with current settings"""
@@ -492,22 +524,49 @@ class MainWindow(QMainWindow):
     
     def training_finished(self, results):
         """Handle training completion"""
+        import time
+        start_time = time.time()
+        
         self.training_results = results
         
-        # Update UI state
+        # Update UI state immediately
+        ui_start_time = time.time()
         self.start_button.setEnabled(True)
         self.stop_button.setEnabled(False)
         self.status_label.setText("Training completed")
         self.progress_bar.setValue(100)
+        ui_elapsed = time.time() - ui_start_time
+        
+        # Log completion for debugging
+        self.add_log_message(f"[{time.time():.3f}] Training worker finished - updating visualizations... (UI update took {ui_elapsed:.3f}s)")
         
         # Update Q-table visualization
-        self.update_qtable_visualization()
+        try:
+            qtable_start_time = time.time()
+            self.update_qtable_visualization()
+            qtable_elapsed = time.time() - qtable_start_time
+            self.add_log_message(f"[{time.time():.3f}] Q-table visualization updated (took {qtable_elapsed:.3f}s)")
+        except Exception as e:
+            self.add_log_message(f"[{time.time():.3f}] Error updating Q-table: {e}")
         
         # Update policy animation widget
-        self.update_policy_animation()
+        try:
+            policy_start_time = time.time()
+            self.update_policy_animation()
+            policy_elapsed = time.time() - policy_start_time
+            self.add_log_message(f"[{time.time():.3f}] Policy animation updated (took {policy_elapsed:.3f}s)")
+        except Exception as e:
+            self.add_log_message(f"[{time.time():.3f}] Error updating policy animation: {e}")
         
         # Add final results to log
-        self.add_final_results()
+        try:
+            results_start_time = time.time()
+            self.add_final_results()
+            results_elapsed = time.time() - results_start_time
+            total_elapsed = time.time() - start_time
+            self.add_log_message(f"[{time.time():.3f}] All post-training updates completed (results took {results_elapsed:.3f}s, total took {total_elapsed:.3f}s)")
+        except Exception as e:
+            self.add_log_message(f"[{time.time():.3f}] Error adding final results: {e}")
     
     def update_qtable_visualization(self):
         """Update the Q-table visualization"""
@@ -598,6 +657,10 @@ class MainWindow(QMainWindow):
     
     def add_log_message(self, message):
         """Add a message to the results log"""
+        import time
+        # If message doesn't already have a timestamp, add one
+        if not message.startswith('[') or ']' not in message[:15]:
+            message = f"[{time.time():.3f}] {message}"
         self.results_text.append(message)
     
     def add_final_results(self):

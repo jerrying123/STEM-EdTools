@@ -443,7 +443,7 @@ def register_gridworld_treasure():
                 'max_steps': 200
             }
         )
-        print("✅ GridWorldTreasure-v0 environment registered successfully!")
+        # print("✅ GridWorldTreasure-v0 environment registered successfully!")
     except gym.error.Error as e:
         if "already registered" in str(e):
             print("ℹ️  GridWorldTreasure-v0 environment already registered")

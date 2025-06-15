@@ -7,6 +7,7 @@ from PyQt6.QtCore import QThread, pyqtSignal
 from ..algorithms import (QLearning, SARSA, ExpectedSARSA, DoubleQLearning, 
                          MonteCarloControl, NStepSARSA, DQN, DoubleDQN, 
                          DuelingDQN, REINFORCE)
+from .. import environments  # Ensure custom environments are registered
 
 class TrainingWorker(QThread):
     # Signals for communicating with the main thread
@@ -23,18 +24,22 @@ class TrainingWorker(QThread):
     def run(self):
         """Main training loop"""
         try:
-            self.log_message.emit("Starting training...")
-            self.log_message.emit(f"Parameters: {self.params}")
+            import time
+            start_time = time.time()
+            self.log_message.emit(f"[{time.time():.3f}] Starting training...")
+            self.log_message.emit(f"[{time.time():.3f}] Parameters: {self.params}")
             
             # Create environment
             env = gym.make(self.params['environment'])
-            self.log_message.emit(f"Created environment: {self.params['environment']}")
+            self.log_message.emit(f"[{time.time():.3f}] Created environment: {self.params['environment']}")
             
             # Create state bins for discretization
             state_bins = self.create_state_bins(env, self.params['discretization_bins'])
+            self.log_message.emit(f"[{time.time():.3f}] Created state bins")
             
             # Initialize algorithms
             algorithms = self.initialize_algorithms()
+            self.log_message.emit(f"[{time.time():.3f}] Initialized algorithms: {list(algorithms.keys())}")
             
             # Training parameters
             episodes = self.params['episodes']
@@ -44,10 +49,12 @@ class TrainingWorker(QThread):
             rewards_history = {name: [] for name in algorithms.keys()}
             
             # Training loop
+            self.log_message.emit(f"[{time.time():.3f}] Starting training loop: {episodes} episodes")
             for episode in range(episodes):
                 if self.should_stop:
                     break
                 
+                episode_start_time = time.time()
                 episode_rewards = {}
                 
                 for algo_name, agent in algorithms.items():
@@ -55,27 +62,52 @@ class TrainingWorker(QThread):
                         break
                     
                     # Run episode for this algorithm
+                    algo_start_time = time.time()
                     total_reward = self.run_episode(env, agent, state_bins, max_steps, algo_name)
+                    algo_elapsed = time.time() - algo_start_time
+                    
                     rewards_history[algo_name].append(total_reward)
                     episode_rewards[algo_name] = total_reward
+                    
+                    if episode < 3:  # Log timing for first few episodes
+                        self.log_message.emit(f"[{time.time():.3f}] Episode {episode + 1} {algo_name}: {total_reward:.1f} (took {algo_elapsed:.3f}s)")
                 
-                # Update progress
+                # Update progress every episode (Qt queued connections will handle compression)
                 progress = int((episode + 1) / episodes * 100)
                 self.progress_updated.emit(progress)
                 
-                # Emit episode completion signal
+                # Emit episode completion signal every episode
+                signal_start_time = time.time()
                 self.episode_completed.emit(episode + 1, rewards_history.copy())
+                signal_elapsed = time.time() - signal_start_time
+                
+                # Periodically yield to Qt event loop for responsive GUI
+                if (episode + 1) % 50 == 0:  # Less frequent since we're using queued connections
+                    from PyQt6.QtCore import QCoreApplication
+                    QCoreApplication.processEvents()
+                
+                episode_elapsed = time.time() - episode_start_time
                 
                 # Log progress periodically
                 if (episode + 1) % max(1, episodes // 10) == 0:
-                    log_msg = f"Episode {episode + 1}/{episodes}"
+                    log_msg = f"[{time.time():.3f}] Episode {episode + 1}/{episodes}"
+                    for algo_name, reward in episode_rewards.items():
+                        log_msg += f" | {algo_name}: {reward:.1f}"
+                    log_msg += f" (episode took {episode_elapsed:.3f}s, signal took {signal_elapsed:.3f}s)"
+                    self.log_message.emit(log_msg)
+                
+                # Also log every episode for the first few to debug timing
+                if episode < 5:
+                    log_msg = f"[{time.time():.3f}] Episode {episode + 1} completed in {episode_elapsed:.3f}s"
                     for algo_name, reward in episode_rewards.items():
                         log_msg += f" | {algo_name}: {reward:.1f}"
                     self.log_message.emit(log_msg)
             
             env.close()
+            self.log_message.emit(f"[{time.time():.3f}] Environment closed")
             
             # Prepare final results
+            results_start_time = time.time()
             results = {}
             for algo_name, agent in algorithms.items():
                 rewards = rewards_history[algo_name]
@@ -85,14 +117,23 @@ class TrainingWorker(QThread):
                     'avg_reward': np.mean(rewards[-100:]) if len(rewards) >= 100 else np.mean(rewards),
                     'best_reward': max(rewards) if rewards else 0
                 }
+            results_elapsed = time.time() - results_start_time
+            self.log_message.emit(f"[{time.time():.3f}] Results prepared (took {results_elapsed:.3f}s)")
             
+            signal_emit_time = time.time()
+            self.log_message.emit(f"[{time.time():.3f}] Emitting training completed signal...")
             self.training_completed.emit(results)
-            self.log_message.emit("Training completed successfully!")
+            signal_emit_elapsed = time.time() - signal_emit_time
+            self.log_message.emit(f"[{time.time():.3f}] Training completed signal emitted (took {signal_emit_elapsed:.3f}s)")
+            
+            # Ensure thread terminates promptly
+            self.quit()
+            self.log_message.emit(f"[{time.time():.3f}] Thread quit() called")
             
         except Exception as e:
-            self.log_message.emit(f"Error during training: {str(e)}")
+            self.log_message.emit(f"[{time.time():.3f}] Error during training: {str(e)}")
             import traceback
-            self.log_message.emit(traceback.format_exc())
+            self.log_message.emit(f"[{time.time():.3f}] {traceback.format_exc()}")
     
     def stop(self):
         """Stop the training process"""

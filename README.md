@@ -185,7 +185,7 @@ RLEd/
 We welcome contributions! Here are some ways you can help:
 
 - **Bug Reports**: Found a bug? Please open an issue with details
-- **Feature Requests**: Have an idea for a new feature? Let us know!
+- **Feature Requests**: Have an idea for a new feature?
 - **Code Contributions**: Submit pull requests for bug fixes or new features
 - **Documentation**: Help improve documentation and examples
 - **Educational Content**: Create tutorials or example environments
@@ -220,8 +220,8 @@ If you use RLEd in your research or educational work, please consider citing:
 ```bibtex
 @software{rled2024,
   title={RLEd: An Open-Source Reinforcement Learning Education Tool},
-  author={Your Name},
-  year={2024},
-  url={https://github.com/yourusername/RLEd}
+  author={Jerry Ng},
+  year={2025},
+  url={https://github.com/jerrying123/RLEd}
 }
 ``` 
