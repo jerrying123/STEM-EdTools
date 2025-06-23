@@ -1,227 +1,172 @@
-# RLEd - Reinforcement Learning Education Tool
+# STEM-EdTools
 
-RLEd is an open-source, low-code education tool designed to help visualize and teach reinforcement learning concepts. Built on top of OpenAI's Gymnasium and PyTorch, it provides an intuitive GUI interface for understanding both tabular and deep RL algorithms through interactive visualizations and real-time training analysis.
+A comprehensive collection of open-source educational tools for teaching and learning various STEM concepts, with a focus on machine learning and artificial intelligence.
 
-## Features
+## Overview
 
-### Algorithms Supported
-**Tabular Methods:**
-- Q-Learning
-- SARSA  
-- Expected SARSA
-- Double Q-Learning
-- Monte Carlo Control
-- n-step SARSA
+STEM-EdTools is a repository containing multiple educational applications designed to make complex STEM concepts accessible through interactive visualizations and hands-on learning experiences. Each tool is self-contained with its own documentation and can be used independently.
 
-**Deep RL Methods:**
-- Deep Q-Network (DQN)
-- Double DQN
-- Dueling DQN
-- REINFORCE (Policy Gradient)
+## Available Tools
 
-### Environments Supported
-**Built-in Gymnasium Environments:**
-- CartPole-v1 (Classic control - pole balancing)
-- MountainCar-v0 (Continuous control - hill climbing)
-- Acrobot-v1 (Complex dynamics - pendulum swing-up)
+### 🤖 [Reinforcement Learning Education Tool (RLEd)](reinforcement-learning/README.md)
 
-**Custom Educational Environments:**
-- GridWorldTreasure-v0 (Resource management and exploration)
+An interactive GUI application for learning reinforcement learning concepts through visualization and real-time training analysis.
 
-### Visualization Features
-- **Real-time Training Progress:** Live plots with moving averages and raw data
-- **Interactive Q-table Visualization:** 
-  - Multi-dimensional state space exploration
-  - Dimension freezing and slicing
-  - Multiple visualization modes (Q-values, policy, value function)
-  - PCA dimensionality reduction for high-dimensional spaces
-- **Policy Animation:** 
-  - Physical system visualization for all environments
-  - Step-by-step policy execution with Q-values/action probabilities
-  - Customizable playback speed and frame navigation
-- **Algorithm Comparison:** Side-by-side performance analysis
-- **Comprehensive Logging:** Detailed training statistics and results
+**Key Features:**
+- 10+ RL algorithms (Q-Learning, DQN, REINFORCE, etc.)
+- 4 environments (CartPole, MountainCar, Acrobot, GridWorld)
+- Real-time training visualization
+- Interactive Q-table exploration
+- Policy animation and comparison tools
 
-## Requirements
+**Perfect for:** Students learning RL, educators teaching AI concepts, researchers exploring algorithm performance
 
-- **Python 3.8+**
-- **PyQt6** (for GUI interface)
-- **PyTorch** (for deep RL algorithms)
-- **Gymnasium** (for RL environments)
-- **NumPy, Matplotlib, Pandas** (for data processing and visualization)
-- **scikit-learn** (optional, for PCA in Q-table visualization)
+### 📊 [Sampling Biases Learning Tool](sampling-biases/README.md)
 
-## Installation
+An interactive application that teaches about sampling biases and data representativeness in machine learning using the MNIST dataset.
 
-### Quick Start
-```bash
-# Clone the repository
-git clone https://github.com/yourusername/RLEd.git
-cd RLEd
+**Key Features:**
+- Interactive class selection for digit datasets
+- Dynamic dataset size control
+- Real-time neural network training
+- Performance analysis with per-class accuracy
+- Educational experiments demonstrating various types of sampling bias
+- Bias type identification and explanation
 
-# Create a virtual environment (recommended)
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+**Perfect for:** Machine learning beginners, data science students, understanding bias in data collection and preparation
 
-# Install dependencies
-pip install -r requirements.txt
+## Quick Start
 
-# Run the application
-python rled_app.py
-```
+### Prerequisites
+- Python 3.8+
+- Git
 
-### Advanced Installation Options
-```bash
-# Option 1: Auto-detect CUDA (recommended)
-pip install -r requirements.txt
+### Installation
 
-# Option 2: Specific CUDA version
-pip install -r requirements-cuda118.txt  # For CUDA 11.8
-pip install -r requirements-cuda121.txt  # For CUDA 12.1
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/yourusername/STEM-EdTools.git
+   cd STEM-EdTools
+   ```
 
-# Option 3: CPU-only (no GPU acceleration)
-pip install -r requirements-cpu.txt
+2. **Set up a virtual environment (recommended):**
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
 
-# Option 4: Development installation
-pip install -e .
-```
+3. **Install dependencies for specific tools:**
+   ```bash
+   # For Reinforcement Learning Tool
+   cd reinforcement-learning
+   pip install -r requirements.txt
+   
+   # For Sampling Biases Tool
+   cd ../sampling-biases
+   pip install -r requirements.txt
+   ```
 
-## Usage
+## Usage Guide
 
-### GUI Application
-```bash
-# Run the main RLEd application
-python rled_app.py
-```
+### For Students
+1. **Start with Sampling Biases Tool** if you're new to machine learning and data science
+2. **Progress to RLEd** once you understand basic ML concepts and bias awareness
+3. **Experiment freely** - each tool is designed for learning through exploration
 
-### Command Line Examples
-```bash
-# Run the GridWorld Treasure Hunt example
-python examples/gridworld_treasure_example.py
+### For Educators
+1. **Use Sampling Biases Tool** to demonstrate data bias, selection bias, and sampling bias concepts
+2. **Use RLEd** to teach reinforcement learning algorithms and concepts
+3. **Customize parameters** to create specific learning scenarios
+4. **Compare algorithms** to show different approaches to the same problem
 
-# Test basic Q-Learning on CartPole
-python examples/basic_example.py
-```
+### For Researchers
+1. **Benchmark algorithms** using RLEd's comparison features
+2. **Test bias hypotheses** about data composition effects with the sampling biases tool
+3. **Extend tools** for specific research needs
 
-### Key Features Overview
-1. **Algorithm Selection**: Choose from 10+ different RL algorithms (tabular and deep)
-2. **Environment Configuration**: 4 environments with customizable parameters
-3. **Real-time Training**: Watch algorithms learn with live progress visualization
-4. **Interactive Q-table Analysis**: Explore learned policies in multi-dimensional space
-5. **Policy Animation**: See trained agents perform with step-by-step breakdowns
-6. **Algorithm Comparison**: Compare multiple algorithms side-by-side
-7. **Educational Focus**: Designed specifically for learning and teaching RL concepts
+## Educational Pathways
 
-### Example Workflows
+### Beginner Path
+1. **Sampling Biases Tool** → Understanding bias in ML and data science
+2. **RLEd (Q-Learning)** → Basic RL concepts
+3. **RLEd (DQN)** → Deep RL introduction
 
-**For Beginners:**
-1. Select "Q-Learning" algorithm
-2. Choose "CartPole-v1" environment  
-3. Use default parameters
-4. Click "Start Training" and watch the learning curve
-5. Explore the Q-table visualization to understand state-action values
-6. Use Policy Animation to see the trained agent in action
+### Advanced Path
+1. **RLEd (Policy Gradient)** → Advanced RL algorithms
+2. **Custom environments** → Building your own RL problems
+3. **Algorithm comparison** → Research-level analysis
 
-**For Advanced Users:**
-1. Select "Compare All" to run multiple algorithms
-2. Choose "GridWorldTreasure-v0" for complex multi-objective learning
-3. Adjust hyperparameters (learning rate, epsilon, network architecture)
-4. Analyze performance differences between tabular and deep methods
-5. Use interactive Q-table visualization with PCA for high-dimensional analysis
+## Contributing
 
-**For Educators:**
-1. Use the tool to demonstrate different RL concepts in real-time
-2. Show the difference between exploration vs exploitation with epsilon settings
-3. Compare tabular methods (Q-Learning) vs deep methods (DQN) on the same task
-4. Use GridWorld environment to teach resource management and multi-objective RL
+We welcome contributions to make these tools even better for education!
 
-## Custom Environment: GridWorld Treasure Hunt
+### How to Contribute
+1. **Fork the repository**
+2. **Create a feature branch** for your changes
+3. **Make your improvements** (new algorithms, environments, visualizations)
+4. **Test thoroughly** to ensure educational value
+5. **Submit a pull request** with clear documentation
 
-RLEd includes a custom educational environment designed to teach advanced RL concepts:
-
-### Environment Features
-- **Grid-based world** with treasures, obstacles, and energy management
-- **Multi-objective rewards**: treasure collection, energy efficiency, time optimization
-- **Resource management**: Limited energy that depletes with movement and recovers when resting
-- **Strategic decision making**: When to move vs when to rest
-- **5 actions**: Up, Right, Down, Left, Stay (to recover energy)
-
-### Educational Value
-- **Sparse rewards**: Teaches exploration in environments with infrequent positive feedback
-- **Multi-objective optimization**: Balancing multiple competing objectives
-- **Resource constraints**: Planning under limited resources
-- **State space complexity**: Demonstrates difference between tabular and deep RL approaches
-
-### Reward Structure
-- **+100** for collecting a treasure
-- **-1** for each step (time penalty)
-- **-5** for hitting obstacles  
-- **-10** for running out of energy
-- **+50** bonus for collecting all treasures
-
-## Screenshots
-
-*Coming soon - GUI screenshots showing the main interface, Q-table visualization, and policy animation.*
+### Areas for Contribution
+- **New algorithms** for RLEd
+- **Additional bias types** for the sampling biases tool
+- **Improved visualizations** and UI enhancements
+- **Educational content** and tutorials
+- **Performance optimizations**
+- **Documentation improvements**
 
 ## Project Structure
 
 ```
-RLEd/
-├── rled/                          # Main package
-│   ├── algorithms/                # RL algorithm implementations
-│   │   ├── tabular/              # Q-Learning, SARSA, etc.
-│   │   └── deep/                 # DQN, REINFORCE, etc.
-│   ├── environments/             # Custom environments
-│   ├── gui/                      # PyQt6 GUI components
-│   └── visualization/            # Plotting and animation utilities
-├── examples/                     # Example scripts and tutorials
-├── requirements*.txt             # Dependency specifications
-├── rled_app.py                  # Main application launcher
-└── README.md                    # This file
-```
-
-## Contributing
-
-We welcome contributions! Here are some ways you can help:
-
-- **Bug Reports**: Found a bug? Please open an issue with details
-- **Feature Requests**: Have an idea for a new feature?
-- **Code Contributions**: Submit pull requests for bug fixes or new features
-- **Documentation**: Help improve documentation and examples
-- **Educational Content**: Create tutorials or example environments
-
-### Development Setup
-```bash
-# Clone and install in development mode
-git clone https://github.com/yourusername/RLEd.git
-cd RLEd
-pip install -e .
-
-# Run tests (when available)
-python -m pytest tests/
+STEM-EdTools/
+├── reinforcement-learning/     # RLEd - RL education tool
+│   ├── rled/                  # Main package
+│   ├── examples/              # Example scripts
+│   ├── requirements*.txt      # Dependencies
+│   └── README.md             # Detailed documentation
+├── sampling-biases/           # Sampling biases learning tool
+│   ├── data/                 # Dataset storage
+│   ├── main.py              # Main application
+│   ├── model.py             # Neural network model
+│   ├── trainer.py           # Training logic
+│   ├── data_handler.py      # Data processing
+│   └── README.md            # Detailed documentation
+├── requirements.txt          # Root dependencies
+├── LICENSE.md               # MIT License
+└── README.md               # This file
 ```
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
 
 ## Acknowledgments
 
-- **OpenAI Gymnasium** for providing the foundation RL environments
-- **PyTorch** team for the deep learning framework
-- **PyQt6** for the powerful GUI framework
-- **The RL community** for research and open-source contributions
+- **OpenAI Gymnasium** for RL environments
+- **PyTorch** for deep learning framework
+- **MNIST Dataset** creators
+- **The open-source community** for inspiration and tools
 - **Educators and students** who inspire better learning tools
 
 ## Citation
 
-If you use RLEd in your research or educational work, please consider citing:
+If you use STEM-EdTools in your research or educational work, please consider citing:
 
 ```bibtex
-@software{rled2024,
-  title={RLEd: An Open-Source Reinforcement Learning Education Tool},
+@software{stemedtools2024,
+  title={STEM-EdTools: A Collection of Educational Tools for STEM Learning},
   author={Jerry Ng},
-  year={2025},
-  url={https://github.com/jerrying123/RLEd}
+  year={2024},
+  url={https://github.com/jerrying123/STEM-EdTools}
 }
-``` 
+```
+
+## Support
+
+- **Issues**: Found a bug or have a feature request? [Open an issue](https://github.com/yourusername/STEM-EdTools/issues)
+- **Discussions**: Want to discuss educational approaches or improvements? [Join the discussion](https://github.com/yourusername/STEM-EdTools/discussions)
+- **Documentation**: Each tool has detailed documentation in its respective README
+
+---
+
+**Happy Learning! 🎓🚀** 

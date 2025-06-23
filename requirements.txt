@@ -5,7 +5,8 @@ matplotlib>=3.7.0
 pandas>=2.0.0
 PyQt6>=6.5.0  # For GUI interface
 scikit-learn>=1.3.0  # For PCA dimensionality reduction
-
+Pillow>=8.3.0
+matplotlib>=3.5.0 
 # PyTorch (auto-detect CUDA if available)
 torch>=2.0.0
 torchvision>=0.15.0  # Optional: for additional neural network utilities 
