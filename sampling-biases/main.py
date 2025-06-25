@@ -4,6 +4,9 @@ import numpy as np
 from PIL import Image, ImageTk
 import threading
 import time
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.figure import Figure
 
 from data_handler import MNISTDataHandler
 from trainer import ModelTrainer
@@ -20,6 +23,7 @@ class MNISTLearningTool:
         self.sample_images = {}
         self.selected_classes = set()
         self.class_sliders = {}
+        self.confusion_matrix = None
         
         # Initialize GUI
         self.setup_gui()
@@ -40,8 +44,8 @@ class MNISTLearningTool:
         # Left panel - Class selection
         self.setup_class_selection_panel(main_frame)
         
-        # Right panel - Dataset configuration and controls
-        self.setup_control_panel(main_frame)
+        # Right panel - Tabbed interface
+        self.setup_tabbed_panel(main_frame)
         
     def setup_class_selection_panel(self, parent):
         """Setup the left panel with class selection"""
@@ -61,33 +65,59 @@ class MNISTLearningTool:
         
         self.class_buttons = {}
         
-    def setup_control_panel(self, parent):
-        """Setup the right panel with controls"""
-        right_frame = ttk.Frame(parent)
-        right_frame.grid(row=0, column=1, sticky=(tk.W, tk.E, tk.N, tk.S))
-        right_frame.columnconfigure(0, weight=1)
+    def setup_tabbed_panel(self, parent):
+        """Setup the right panel with tabbed interface"""
+        # Create notebook for tabs
+        self.notebook = ttk.Notebook(parent)
+        self.notebook.grid(row=0, column=1, sticky=(tk.W, tk.E, tk.N, tk.S))
         
-        # Selected classes frame
-        self.selected_frame = ttk.LabelFrame(right_frame, text="Selected Classes & Dataset Distribution", padding="10")
-        self.selected_frame.grid(row=0, column=0, sticky=(tk.W, tk.E), pady=(0, 10))
-        self.selected_frame.columnconfigure(0, weight=1)
+        # Setup tabs
+        self.setup_control_tab()
+        self.setup_results_tab()
         
-        # Add legend for slider colors
-        legend_frame = ttk.Frame(self.selected_frame)
-        legend_frame.grid(row=0, column=0, sticky=(tk.W, tk.E), pady=(0, 10))
+    def setup_control_tab(self):
+        """Setup the control tab with dataset configuration and training controls"""
+        control_frame = ttk.Frame(self.notebook)
+        self.notebook.add(control_frame, text="Controls")
+        control_frame.columnconfigure(0, weight=1)
+        control_frame.rowconfigure(0, weight=1)
         
-        ttk.Label(legend_frame, text="Data Split Legend:", font=("Arial", 10, "bold")).grid(row=0, column=0, sticky=tk.W)
-        ttk.Label(legend_frame, text="🟦 Training", foreground="blue").grid(row=0, column=1, padx=(10, 5))
-        ttk.Label(legend_frame, text="🟨 Validation", foreground="orange").grid(row=0, column=2, padx=(10, 5))
-        ttk.Label(legend_frame, text="🟥 Test (auto)", foreground="red").grid(row=0, column=3, padx=(10, 5))
+        # Create a canvas with scrollbar for the entire control tab
+        canvas = tk.Canvas(control_frame)
+        scrollbar = ttk.Scrollbar(control_frame, orient="vertical", command=canvas.yview)
+        scrollable_frame = ttk.Frame(canvas)
+        
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+        
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        # Grid the canvas and scrollbar
+        canvas.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
+        scrollbar.grid(row=0, column=1, sticky=(tk.N, tk.S))
+        
+        # Configure grid weights
+        control_frame.columnconfigure(0, weight=1)
+        control_frame.rowconfigure(0, weight=1)
+        
+        # Bind mouse wheel to canvas
+        def _on_mousewheel(event):
+            canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+        canvas.bind_all("<MouseWheel>", _on_mousewheel)
+        
+        # Selected classes frame with collapsible functionality
+        self.setup_collapsible_dataset_frame(scrollable_frame)
         
         # Control buttons frame
-        control_frame = ttk.LabelFrame(right_frame, text="Training Controls", padding="10")
-        control_frame.grid(row=1, column=0, sticky=(tk.W, tk.E), pady=(0, 10))
-        control_frame.columnconfigure(0, weight=1)
+        control_buttons_frame = ttk.LabelFrame(scrollable_frame, text="Training Controls", padding="10")
+        control_buttons_frame.grid(row=1, column=0, sticky=(tk.W, tk.E), pady=(0, 10))
+        control_buttons_frame.columnconfigure(0, weight=1)
         
         # Buttons
-        button_frame = ttk.Frame(control_frame)
+        button_frame = ttk.Frame(control_buttons_frame)
         button_frame.grid(row=0, column=0, pady=(0, 10))
         
         self.create_dataset_btn = ttk.Button(button_frame, text="Create Dataset", 
@@ -107,9 +137,141 @@ class MNISTLearningTool:
         self.stop_btn.grid(row=0, column=3, padx=(5, 0))
         
         # Progress and results
-        self.progress_text = scrolledtext.ScrolledText(control_frame, height=15, width=60)
+        self.progress_text = scrolledtext.ScrolledText(control_buttons_frame, height=15, width=60)
         self.progress_text.grid(row=1, column=0, sticky=(tk.W, tk.E, tk.N, tk.S), pady=(10, 0))
-        control_frame.rowconfigure(1, weight=1)
+        control_buttons_frame.rowconfigure(1, weight=1)
+        
+    def setup_collapsible_dataset_frame(self, parent):
+        """Setup collapsible dataset configuration frame"""
+        # Main frame
+        self.dataset_frame = ttk.LabelFrame(parent, text="Selected Classes & Dataset Distribution", padding="10")
+        self.dataset_frame.grid(row=0, column=0, sticky=(tk.W, tk.E), pady=(0, 10))
+        self.dataset_frame.columnconfigure(0, weight=1)
+        
+        # Header frame with toggle button
+        header_frame = ttk.Frame(self.dataset_frame)
+        header_frame.grid(row=0, column=0, sticky=(tk.W, tk.E), pady=(0, 10))
+        header_frame.columnconfigure(1, weight=1)
+        
+        # Toggle button
+        self.toggle_btn = ttk.Button(header_frame, text="▼ Collapse", 
+                                   command=self.toggle_dataset_frame, width=15)
+        self.toggle_btn.grid(row=0, column=0, sticky=tk.W)
+        
+        # Add legend for slider colors
+        legend_frame = ttk.Frame(header_frame)
+        legend_frame.grid(row=0, column=1, sticky=(tk.W, tk.E))
+        
+        ttk.Label(legend_frame, text="Data Split Legend:", font=("Arial", 10, "bold")).grid(row=0, column=0, sticky=tk.W)
+        ttk.Label(legend_frame, text="🟦 Training", foreground="blue").grid(row=0, column=1, padx=(10, 5))
+        ttk.Label(legend_frame, text="🟨 Validation", foreground="orange").grid(row=0, column=2, padx=(10, 5))
+        ttk.Label(legend_frame, text="🟥 Test (auto)", foreground="red").grid(row=0, column=3, padx=(10, 5))
+        
+        # Content frame (initially visible)
+        self.dataset_content_frame = ttk.Frame(self.dataset_frame)
+        self.dataset_content_frame.grid(row=1, column=0, sticky=(tk.W, tk.E))
+        self.dataset_content_frame.columnconfigure(0, weight=1)
+        
+        # Store reference to the content frame for sliders
+        self.selected_frame = self.dataset_content_frame
+        
+        # Track collapse state
+        self.dataset_frame_collapsed = False
+        
+    def toggle_dataset_frame(self):
+        """Toggle the visibility of the dataset configuration frame"""
+        if self.dataset_frame_collapsed:
+            # Expand
+            self.dataset_content_frame.grid()
+            self.toggle_btn.config(text="▼ Collapse")
+            self.dataset_frame_collapsed = False
+        else:
+            # Collapse
+            self.dataset_content_frame.grid_remove()
+            self.toggle_btn.config(text="▶ Expand")
+            self.dataset_frame_collapsed = True
+        
+    def setup_results_tab(self):
+        """Setup the results tab with confusion matrix visualization"""
+        results_frame = ttk.Frame(self.notebook)
+        self.notebook.add(results_frame, text="Results")
+        results_frame.columnconfigure(0, weight=1)
+        results_frame.rowconfigure(1, weight=1)
+        
+        # Title
+        title_label = ttk.Label(results_frame, text="Confusion Matrix Analysis", 
+                               font=("Arial", 14, "bold"))
+        title_label.grid(row=0, column=0, pady=(10, 5))
+        
+        # Instructions
+        instructions = ttk.Label(results_frame, 
+                               text="Run a test to see the confusion matrix heatmap and detailed analysis.",
+                               font=("Arial", 10))
+        instructions.grid(row=1, column=0, pady=(0, 10))
+        
+        # Create matplotlib figure for confusion matrix
+        self.fig = Figure(figsize=(8, 6), dpi=100)
+        self.ax = self.fig.add_subplot(111)
+        
+        # Create canvas
+        self.canvas = FigureCanvasTkAgg(self.fig, results_frame)
+        self.canvas.get_tk_widget().grid(row=2, column=0, sticky=(tk.W, tk.E, tk.N, tk.S), pady=10)
+        
+        # Results text area
+        self.results_text = scrolledtext.ScrolledText(results_frame, height=10, width=80)
+        self.results_text.grid(row=3, column=0, sticky=(tk.W, tk.E, tk.N, tk.S), pady=(10, 0))
+        results_frame.rowconfigure(3, weight=1)
+        
+        # Show placeholder
+        self.show_placeholder_plot()
+        
+    def show_placeholder_plot(self):
+        """Show placeholder plot when no results are available"""
+        self.ax.clear()
+        self.ax.text(0.5, 0.5, 'Run a test to see the confusion matrix', 
+                    ha='center', va='center', transform=self.ax.transAxes,
+                    fontsize=14, color='gray')
+        self.ax.set_xlim(0, 1)
+        self.ax.set_ylim(0, 1)
+        self.ax.axis('off')
+        self.canvas.draw()
+        
+    def plot_confusion_matrix(self, confusion_matrix):
+        """Plot confusion matrix as heatmap"""
+        self.ax.clear()
+        
+        # Create heatmap
+        im = self.ax.imshow(confusion_matrix, cmap='Blues', interpolation='nearest')
+        
+        # Add colorbar
+        cbar = self.fig.colorbar(im, ax=self.ax)
+        cbar.set_label('Number of Predictions', rotation=270, labelpad=15)
+        
+        # Set labels
+        self.ax.set_xlabel('Predicted Label')
+        self.ax.set_ylabel('True Label')
+        self.ax.set_title('Confusion Matrix Heatmap')
+        
+        # Set tick labels
+        self.ax.set_xticks(range(10))
+        self.ax.set_yticks(range(10))
+        self.ax.set_xticklabels(range(10))
+        self.ax.set_yticklabels(range(10))
+        
+        # Add text annotations
+        for i in range(10):
+            for j in range(10):
+                value = confusion_matrix[i, j]
+                if value > 0:
+                    # Use white text for dark backgrounds, black for light
+                    color = 'white' if value > confusion_matrix.max() / 2 else 'black'
+                    self.ax.text(j, i, str(value), ha='center', va='center', 
+                               color=color, fontweight='bold')
+        
+        # Rotate x-axis labels for better readability
+        plt.setp(self.ax.get_xticklabels(), rotation=0)
+        
+        self.canvas.draw()
         
     def load_data(self):
         """Load MNIST data in a separate thread"""
@@ -393,6 +555,9 @@ class MNISTLearningTool:
             
             test_loss, overall_accuracy, class_accuracies, class_totals, confusion_matrix = self.trainer.test(self.test_loader)
             
+            # Store confusion matrix for plotting
+            self.confusion_matrix = confusion_matrix
+            
             results = f"\n=== TEST RESULTS ===\n"
             results += f"Overall Test Accuracy: {overall_accuracy:.2f}%\n"
             results += f"Test Loss: {test_loss:.4f}\n\n"
@@ -406,46 +571,10 @@ class MNISTLearningTool:
             results += "\nThis shows how sampling biases affect model performance!\n"
             results += "Notice how classes with fewer samples might have lower accuracy.\n"
             
-            # Add confusion matrix
+            # Add confusion matrix analysis
             results += "\n" + "="*60 + "\n"
-            results += "CONFUSION MATRIX\n"
-            results += "="*60 + "\n"
-            results += "Rows: True Labels, Columns: Predicted Labels\n"
-            results += "Diagonal shows correct predictions\n\n"
-            
-            # Header row
-            results += "True\\Pred"
-            for i in range(10):
-                results += f"  {i:>3}"
-            results += "  Total\n"
-            
-            # Separator
-            results += "-" * 50 + "\n"
-            
-            # Matrix rows
-            for i in range(10):
-                results += f"   {i}    "
-                row_total = 0
-                for j in range(10):
-                    value = confusion_matrix[i][j]
-                    row_total += value
-                    if i == j:  # Diagonal (correct predictions)
-                        results += f" [{value:>2}]"
-                    else:  # Off-diagonal (incorrect predictions)
-                        results += f"  {value:>2} "
-                results += f"  {row_total:>3}\n"
-            
-            # Column totals
-            results += "-" * 50 + "\n"
-            results += "Total   "
-            for j in range(10):
-                col_total = sum(confusion_matrix[i][j] for i in range(10))
-                results += f"  {col_total:>2} "
-            results += "\n\n"
-            
-            # Analysis of confusion matrix
             results += "CONFUSION MATRIX ANALYSIS:\n"
-            results += "-" * 30 + "\n"
+            results += "="*60 + "\n"
             
             # Find most confused pairs
             max_confusion = 0
@@ -476,11 +605,20 @@ class MNISTLearningTool:
                     
                     results += f"Digit {i}: Precision={precision:.3f}, Recall={recall:.3f}, F1={f1:.3f}\n"
             
+            # Update GUI on main thread
             self.root.after(0, lambda: self.update_progress(results))
+            self.root.after(0, lambda: self.update_results_tab(results))
+            self.root.after(0, lambda: self.plot_confusion_matrix(confusion_matrix))
+            self.root.after(0, lambda: self.notebook.select(1))  # Switch to results tab
             
         thread = threading.Thread(target=test_thread)
         thread.daemon = True
         thread.start()
+        
+    def update_results_tab(self, results):
+        """Update the results tab with detailed analysis"""
+        self.results_text.delete(1.0, tk.END)
+        self.results_text.insert(tk.END, results)
         
     def update_progress(self, message):
         """Update progress text"""
