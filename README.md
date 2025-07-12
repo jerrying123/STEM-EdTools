@@ -27,13 +27,27 @@ An interactive application that teaches about sampling biases and data represent
 
 **Key Features:**
 - Interactive class selection for digit datasets
-- Dynamic dataset size control
+- Dynamic dataset size control with train/val/test splits
 - Real-time neural network training
 - Performance analysis with per-class accuracy
 - Educational experiments demonstrating various types of sampling bias
-- Bias type identification and explanation
+- Confusion matrix visualization with matplotlib heatmaps
 
 **Perfect for:** Machine learning beginners, data science students, understanding bias in data collection and preparation
+
+### 🎯 [ML Context Capture & Analysis Tool](ml-application/README.md)
+
+An interactive application that demonstrates real-world AI integration by capturing screen content and analyzing it with OpenAI's GPT-4 Vision model.
+
+**Key Features:**
+- Transparent overlay window for screen capture
+- Interactive area selection with real-time preview
+- GPT-4 Vision integration for image analysis
+- Contextual prompting with example suggestions
+- Professional GUI with status feedback
+- Educational demonstrations of AI capabilities
+
+**Perfect for:** AI/ML demonstrations, computer vision education, practical AI integration examples
 
 ## Quick Start
 
@@ -55,15 +69,30 @@ An interactive application that teaches about sampling biases and data represent
    source venv/bin/activate  # On Windows: venv\Scripts\activate
    ```
 
-3. **Install dependencies for specific tools:**
+3. **Install all dependencies:**
    ```bash
-   # For Reinforcement Learning Tool
+   pip install -r requirements.txt
+   ```
+
+4. **Set up your OpenAI API key (for ML Context Capture Tool):**
+   Create a `.env` file in the project directory:
+   ```
+   OPENAI_KEY=your_openai_api_key_here
+   ```
+
+5. **Run any tool:**
+   ```bash
+   # Reinforcement Learning Tool
    cd reinforcement-learning
-   pip install -r requirements.txt
+   python rled_app.py
    
-   # For Sampling Biases Tool
+   # Sampling Biases Tool
    cd ../sampling-biases
-   pip install -r requirements.txt
+   python main.py
+   
+   # ML Context Capture Tool
+   cd ../ml-application
+   python main.py
    ```
 
 ## Usage Guide
@@ -71,30 +100,35 @@ An interactive application that teaches about sampling biases and data represent
 ### For Students
 1. **Start with Sampling Biases Tool** if you're new to machine learning and data science
 2. **Progress to RLEd** once you understand basic ML concepts and bias awareness
-3. **Experiment freely** - each tool is designed for learning through exploration
+3. **Try ML Context Capture Tool** to see AI in action with real-world applications
+4. **Experiment freely** - each tool is designed for learning through exploration
 
 ### For Educators
 1. **Use Sampling Biases Tool** to demonstrate data bias, selection bias, and sampling bias concepts
 2. **Use RLEd** to teach reinforcement learning algorithms and concepts
-3. **Customize parameters** to create specific learning scenarios
-4. **Compare algorithms** to show different approaches to the same problem
+3. **Use ML Context Capture Tool** to show practical AI applications and computer vision
+4. **Customize parameters** to create specific learning scenarios
+5. **Compare algorithms** to show different approaches to the same problem
 
 ### For Researchers
 1. **Benchmark algorithms** using RLEd's comparison features
 2. **Test bias hypotheses** about data composition effects with the sampling biases tool
-3. **Extend tools** for specific research needs
+3. **Demonstrate AI capabilities** using the ML context capture tool
+4. **Extend tools** for specific research needs
 
 ## Educational Pathways
 
 ### Beginner Path
 1. **Sampling Biases Tool** → Understanding bias in ML and data science
 2. **RLEd (Q-Learning)** → Basic RL concepts
-3. **RLEd (DQN)** → Deep RL introduction
+3. **ML Context Capture Tool** → Practical AI applications
+4. **RLEd (DQN)** → Deep RL introduction
 
 ### Advanced Path
 1. **RLEd (Policy Gradient)** → Advanced RL algorithms
 2. **Custom environments** → Building your own RL problems
 3. **Algorithm comparison** → Research-level analysis
+4. **AI integration** → Building custom AI applications
 
 ## Contributing
 
@@ -110,6 +144,7 @@ We welcome contributions to make these tools even better for education!
 ### Areas for Contribution
 - **New algorithms** for RLEd
 - **Additional bias types** for the sampling biases tool
+- **AI model integrations** for the ML context capture tool
 - **Improved visualizations** and UI enhancements
 - **Educational content** and tutorials
 - **Performance optimizations**
@@ -131,6 +166,10 @@ STEM-EdTools/
 │   ├── trainer.py           # Training logic
 │   ├── data_handler.py      # Data processing
 │   └── README.md            # Detailed documentation
+├── ml-application/           # ML context capture tool
+│   ├── main.py              # Main application
+│   ├── requirements.txt     # Dependencies
+│   └── README.md            # Detailed documentation
 ├── requirements.txt          # Root dependencies
 ├── LICENSE.md               # MIT License
 └── README.md               # This file
@@ -142,6 +181,7 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md
 
 ## Acknowledgments
 
+- **OpenAI** for GPT-4 Vision API
 - **OpenAI Gymnasium** for RL environments
 - **PyTorch** for deep learning framework
 - **MNIST Dataset** creators
